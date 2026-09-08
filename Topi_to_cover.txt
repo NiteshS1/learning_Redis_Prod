@@ -1,0 +1,27 @@
+Cache-aside 
+Cache expiration / TTL
+Cache invalidation
+Cache consistency
+Cache stampede
+Distributed locking
+Session storage
+Session expiration (Absolute expiration, Sliding expiration)
+Rate limiting
+Redis failure
+Memory limits
+Eviction policies
+High availability (Replication, Sentinel, Cluster, Failover, Sharding, Persistence, RDB, AOF)
+Write-through
+Write-behind (durability, failure behavior, data loss, queueing, persistence)
+Redis persistence
+RDB vs. AOF (Append-Only File)
+Atomic operations
+Redis data structures
+Pub/Sub
+Redis Streams
+Key design
+Serialization
+ 
+Consistency tradeoffs 
+Failure behavior
+What if Redis crashes?
