@@ -5,6 +5,9 @@ import { prisma } from "./database/prisma.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
+/**
+ * Connects to PostgreSQL, starts the application server, and configures graceful shutdown handling.
+ */
 async function bootstrap() {
   try {
     await prisma.$connect();
