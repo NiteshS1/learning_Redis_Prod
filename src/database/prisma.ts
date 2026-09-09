@@ -18,6 +18,8 @@ const adapter = new PrismaPg({
   connectionTimeoutMillis: 5_000,
 
   idleTimeoutMillis: 30_000,
+
+  application_name: "todo-redis-lab",
 });
 
 export const prisma = new PrismaClient({
