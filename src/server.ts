@@ -2,38 +2,81 @@ import "dotenv/config";
 
 import { app } from "./app.js";
 import { prisma } from "./database/prisma.js";
+import { redis } from "./database/redis.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
-async function bootstrap() {
+async function bootstrap () {
   try {
     await prisma.$connect();
+    console.log("[POSTGRES] Connected");
 
-    console.log("PostgreSQL connected");
+    await redis.connect();
+    console.log("[REDIS] Connected");
 
     const server = app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(
+        `[HTTP] Server running on http://localhost:${PORT}`,
+      );
     });
 
+    let shuttingDown = false;
+
+    // await redis.set(
+    //   "lab:hello",
+    //   "full-power-redis",
+    // );
+    // const value = await redis.get("lab:hello");
+    // console.log(value);
+
     const shutdown = async (signal: string) => {
-      console.log(`${signal} received. Shutting down gracefully...`);
+      if (shuttingDown) {
+        return;
+      }
+
+      shuttingDown = true;
+
+      console.log(
+        `[SHUTDOWN] ${signal} received`,
+      );
 
       server.close(async () => {
-        await prisma.$disconnect();
+        try {
+          await Promise.allSettled([
+            prisma.$disconnect(),
+            redis.isOpen
+              ? redis.close()
+              : Promise.resolve(),
+          ]);
 
-        console.log("PostgreSQL disconnected");
-        console.log("Server closed");
-
-        process.exit(0);
+          console.log(
+            "[SHUTDOWN] Dependencies closed",
+          );
+        } finally {
+          process.exit(0);
+        }
       });
     };
 
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
-    process.on("SIGINT", () => shutdown("SIGINT"));
-  } catch (error) {
-    console.error("Failed to start application:", error);
+    process.on("SIGINT", () =>
+      shutdown("SIGINT"),
+    );
 
-    await prisma.$disconnect();
+    process.on("SIGTERM", () =>
+      shutdown("SIGTERM"),
+    );
+  } catch (error) {
+    console.error(
+      "[BOOTSTRAP] Failed:",
+      error,
+    );
+
+    await Promise.allSettled([
+      prisma.$disconnect(),
+      redis.isOpen
+        ? redis.close()
+        : Promise.resolve(),
+    ]);
 
     process.exit(1);
   }
