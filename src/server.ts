@@ -6,7 +6,10 @@ import { redis } from "./database/redis.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
-async function bootstrap () {
+/**
+ * Connects to PostgreSQL, starts the application server, and configures graceful shutdown handling.
+ */
+async function bootstrap() {
   try {
     await prisma.$connect();
     console.log("[POSTGRES] Connected");
