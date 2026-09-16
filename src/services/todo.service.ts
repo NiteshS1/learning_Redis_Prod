@@ -90,7 +90,8 @@ export class TodoService {
     }
 
     async createTodo (data: CreateTodoInput) {
-        const todo = this.todoRepository.create(data);
+        const todo =
+            await this.todoRepository.create(data);
 
         await this.cacheService.delete(
             redisKeys.allTodos(),

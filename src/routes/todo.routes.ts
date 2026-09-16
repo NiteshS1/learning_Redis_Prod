@@ -55,7 +55,7 @@ router.delete(
 
 router.get(
     "/debug/db/:id",
-    todoService.getTodoByIdWithoutCache,
+    todoController.getTodoByIdWithoutCahce,
 );
 
 export { router as todoRouter };
