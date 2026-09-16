@@ -135,4 +135,23 @@ export class TodoController {
             next(error);
         }
     };
+
+    getTodoByIdWithoutCahce = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ) => {
+        try {
+            const id = todoIdSchema.parse(req.params);
+
+            const todo = await this.todoService.getTodoByIdWithoutCache(id);
+
+            res.status(200).json({
+                success: true,
+                data: todo,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 }
