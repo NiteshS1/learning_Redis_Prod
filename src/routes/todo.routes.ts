@@ -4,6 +4,7 @@ import { TodoController } from "../controllers/todo.controller.js";
 import { TodoRepository } from "../repositories/todo.repository.js";
 import { CacheService } from "../services/cache.service.js";
 import { TodoService } from "../services/todo.service.js";
+import { LockService } from "../services/lock.service.js";
 
 const router = Router();
 
@@ -13,10 +14,14 @@ const todoRepository =
 const cacheService =
     new CacheService();
 
+const lockSerice =
+    new LockService();
+
 const todoService =
     new TodoService(
         todoRepository,
-        cacheService
+        cacheService,
+        lockSerice,
     );
 
 const todoController =
