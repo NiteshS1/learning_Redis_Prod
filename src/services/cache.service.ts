@@ -104,4 +104,51 @@ export class CacheService {
             );
         }
     }
+
+    async getRaw (
+        key: string,
+    ): Promise<string | null> {
+        try {
+            if (!redis.isReady) {
+                return null;
+            }
+
+            return await redis.get(key);
+        } catch (error) {
+            console.error(
+                `[CACHE GET ERROR] ${key}`,
+                error,
+            );
+
+            return null;
+        }
+    }
+
+    async setRaw (
+        key: string,
+        value: string,
+        ttlSeconds: number,
+    ): Promise<void> {
+        try {
+            if (!redis.isReady) {
+                return;
+            }
+
+            await redis.set(
+                key,
+                value,
+                {
+                    expiration: {
+                        type: "EX",
+                        value: ttlSeconds,
+                    },
+                },
+            );
+        } catch (error) {
+            console.error(
+                `[CACHE SET ERROR] ${key}`,
+                error,
+            );
+        }
+    }
 }

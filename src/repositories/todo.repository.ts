@@ -25,11 +25,24 @@ export class TodoRepository {
   }
 
   async findById (id: string) {
-    return prisma.todo.findUnique({
-      where: {
-        id,
-      },
-    });
+    const start = performance.now();
+
+    try {
+      await prisma.$queryRaw`
+        SELECT 'slept'::text AS result
+        FROM pg_sleep(1);
+      `;
+
+      return await prisma.todo.findUnique({
+        where: {
+          id,
+        },
+      });
+    } finally {
+      console.log(
+        `[DB] findById ${(performance.now() - start).toFixed(2)}ms`,
+      );
+    }
   }
 
   async create (data: CreateTodoInput) {
