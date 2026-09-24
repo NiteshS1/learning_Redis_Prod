@@ -28,10 +28,10 @@ export class TodoRepository {
     const start = performance.now();
 
     try {
-      await prisma.$queryRaw`
-        SELECT 'slept'::text AS result
-        FROM pg_sleep(1);
-      `;
+      // await prisma.$queryRaw`
+      //   SELECT 'slept'::text AS result
+      //   FROM pg_sleep(1);
+      // `;
 
       return await prisma.todo.findUnique({
         where: {
