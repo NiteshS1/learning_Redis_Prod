@@ -1,6 +1,34 @@
 import { redis } from "../database/redis.js";
 
 export class CacheService {
+    private logCacheError (
+        operation: string,
+        key: string,
+        error: unknown,
+    ) {
+        const message =
+            error instanceof Error
+                ? error.message
+                : String(error);
+
+        if (
+            message
+                .toLowerCase()
+                .includes("maxmemory")
+        ) {
+            console.error(
+                `[CACHE MEMORY PRESSURE] ${operation} ${key}`,
+            );
+
+            return;
+        }
+
+        console.error(
+            `[CACHE ${operation} ERROR] ${key}`,
+            error,
+        );
+    }
+
     async get<T> (
         key: string,
     ): Promise<T | null> {
@@ -39,8 +67,9 @@ export class CacheService {
             const duration =
                 performance.now() - start;
 
-            console.error(
-                `[REDIS ERROR] ${key} ${duration.toFixed(2)}ms`,
+            this.logCacheError(
+                "GET",
+                key,
                 error,
             );
 
@@ -81,8 +110,9 @@ export class CacheService {
                 serialized,
             );
         } catch (error) {
-            console.error(
-                `[CACHE SET ERROR] ${key}`,
+            this.logCacheError(
+                "SET",
+                key,
                 error,
             );
         }
@@ -98,8 +128,9 @@ export class CacheService {
 
             await redis.del(key);
         } catch (error) {
-            console.error(
-                `[CACHE DELETE ERROR] ${key}`,
+            this.logCacheError(
+                "DELETE",
+                key,
                 error,
             );
         }
@@ -115,8 +146,9 @@ export class CacheService {
 
             return await redis.get(key);
         } catch (error) {
-            console.error(
-                `[CACHE GET ERROR] ${key}`,
+            this.logCacheError(
+                "GETRAW",
+                key,
                 error,
             );
 
@@ -145,8 +177,13 @@ export class CacheService {
                 },
             );
         } catch (error) {
-            console.error(
-                `[CACHE SET ERROR] ${key}`,
+            // console.error(
+            //     `[CACHE SET ERROR] ${key}`,
+            //     error,
+            // );
+            this.logCacheError(
+                "SETRAW",
+                key,
                 error,
             );
         }

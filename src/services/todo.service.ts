@@ -18,25 +18,28 @@ export class TodoService {
         private readonly lockSerice: LockService,
     ) { }
 
-    private sleep (ms: number) {
+    private sleep(ms: number) {
         return new Promise<void>((resolve) => {
             setTimeout(resolve, ms);
         });
     }
 
-    private async waitForCache (
+    private async waitForCache(
         id: string,
         cacheKey: string,
     ) {
         const maxAttempts = 20;
-        const delayMs = 100;
+        const baseDelayMs = 100;
 
         for (
             let attempt = 1;
             attempt <= maxAttempts;
             attempt++
         ) {
-            await this.sleep(delayMs);
+
+            const jitterMs = Math.random() * 50;
+
+            await this.sleep(baseDelayMs + jitterMs);
 
             const cached =
                 await this.cacheService.getRaw(
@@ -71,8 +74,19 @@ export class TodoService {
             `[CACHE WAIT TIMEOUT] ${cacheKey}`,
         );
 
-        const todo =
-            await this.todoRepository.findById(id);
+        return this.getTodoFromDatabase(id);
+    }
+
+    private async getTodoFromDatabase(
+        id: string,
+    ) {
+        console.log(
+            `[DATABASE FALLBACK] todo:${id}`,
+        );
+
+        const todo = await this.todoRepository.findById(
+            id,
+        );
 
         if (!todo) {
             throw new AppError(
@@ -85,26 +99,18 @@ export class TodoService {
         return todo;
     }
 
-    async getAllTodos () {
-        const cacheKey =
-            redisKeys.allTodos();
+    async getAllTodos() {
+        const cacheKey = redisKeys.allTodos();
 
-        const cachedTodos =
-            await this.cacheService.get(
-                cacheKey
-            );
+        const cachedTodos = await this.cacheService.get(cacheKey);
 
         if (cachedTodos) {
-            console.log(
-                `[CACHE HIT] ${cacheKey}`,
-            );
+            console.log(`[CACHE HIT] ${cacheKey}`);
 
             return cachedTodos;
         }
 
-        console.log(
-            `[CACHE MISS] ${cacheKey}`,
-        );
+        console.log(`[CACHE MISS] ${cacheKey}`);
 
         const todos = await this.todoRepository.findAll();
 
@@ -122,7 +128,7 @@ export class TodoService {
         return todos;
     }
 
-    async getTodoById (id: string) {
+    async getTodoById(id: string) {
         const cacheKey =
             redisKeys.todo(id);
 
@@ -168,12 +174,32 @@ export class TodoService {
 
         const lockKey = redisKeys.todoLock(id);
 
-        const lock = await this.lockSerice.acquire(
+        const lockResult = await this.lockSerice.acquire(
             lockKey,
             5000,
         );
 
-        if (lock) {
+        if (lockResult.status === "unavailable") {
+            console.warn(
+                `[CACHE COORDINATION UNAVAILABLE] ${cacheKey}`,
+            );
+
+            return this.getTodoFromDatabase(id);
+        }
+
+        if (lockResult.status === "contended") {
+            console.log(
+                `[LOCK CONTENDED] ${lockKey}`,
+            );
+
+            return this.waitForCache(id, cacheKey);
+        }
+
+
+
+        if (lockResult.status === "acquired") {
+            const lock = lockResult.lock;
+
             try {
                 const cachedAfterLock = await this.cacheService.getRaw(cacheKey);
 
@@ -181,6 +207,10 @@ export class TodoService {
                     cachedAfterLock ===
                     NEGATIVE_CACHE_VALUE
                 ) {
+                    console.log(
+                        `[NEGATIVE CACHE HIT AFTER LOCK] ${cacheKey}`,
+                    );
+
                     throw new AppError(
                         "Todo not found",
                         404,
@@ -189,10 +219,18 @@ export class TodoService {
                 }
 
                 if (cachedAfterLock !== null) {
+                    console.log(
+                        `[CACHE HIT AFTER LOCK] ${cacheKey}`,
+                    );
+
                     return JSON.parse(
                         cachedAfterLock,
                     );
                 }
+
+                console.log(
+                    `[CACHE REBUILD] ${cacheKey}`,
+                );
 
                 const todo = await this.todoRepository.findById(id);
 
@@ -231,19 +269,23 @@ export class TodoService {
                     ttl,
                 );
 
+                console.log(
+                    `[CACHE SET] ${cacheKey} TTL=${ttl}s`,
+                );
+
                 return todo;
             } finally {
                 await this.lockSerice.release(lock);
             }
         }
 
-        return this.waitForCache(
-            id,
-            cacheKey,
-        );
+        // return this.waitForCache(
+        //     id,
+        //     cacheKey,
+        // );
     }
 
-    async createTodo (data: CreateTodoInput) {
+    async createTodo(data: CreateTodoInput) {
         const todo =
             await this.todoRepository.create(data);
 
@@ -254,7 +296,7 @@ export class TodoService {
         return todo;
     }
 
-    async updateTodo (
+    async updateTodo(
         id: string,
         data: UpdateTodoInput,
     ) {
@@ -288,7 +330,7 @@ export class TodoService {
         return updateTodo;
     }
 
-    async deleteTodo (id: string) {
+    async deleteTodo(id: string) {
         const existingTodo =
             await this.todoRepository.findById(id);
 
@@ -313,23 +355,13 @@ export class TodoService {
         ]);
     }
 
-    async runSlowQuery () {
+    async runSlowQuery() {
         return this.todoRepository.slowQuery(2);
     }
 
-    async getTodoByIdWithoutCache (
+    async getTodoByIdWithoutCache(
         id: string,
     ) {
-        const todo = await this.todoRepository.findById(id);
-
-        if (!todo) {
-            throw new AppError(
-                "Todo not found",
-                404,
-                "TODO_NOT_FOUND",
-            );
-        }
-
-        return todo;
+        return this.getTodoFromDatabase(id);
     }
 }
