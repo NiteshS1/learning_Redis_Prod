@@ -11,6 +11,12 @@ export async function readinessCheck (
   res: Response,
 ) {
   try {
+
+    // const [postgres, redisResult] = await Promise.allSettled([
+    //   prisma.$queryRaw`SELECT 1`,
+    //   redis.ping(),
+    // ]);
+
     await prisma.$queryRaw`SELECT 1`;
 
     const redisStatus =
