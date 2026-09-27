@@ -7,3 +7,9 @@ dist
 
 .DS_Store
 /src/generated/prisma
+
+cookies.txt
+laptop.txt
+phone.txt
+desktop.txt
+multi.txt

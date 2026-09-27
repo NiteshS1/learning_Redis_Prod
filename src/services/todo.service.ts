@@ -1,5 +1,5 @@
 import { cacheConfig, NEGATIVE_CACHE_VALUE } from "../config/cache.config.js";
-import { redisKeys } from "../config/redis-key.js";
+import { redisKeys } from "../config/redis-keys.js";
 import { TodoRepository } from "../repositories/todo.repository.js";
 import { AppError } from "../types/app-error.js";
 import { addTtlJitter } from "../utils/cache.ttl.js";
@@ -18,13 +18,13 @@ export class TodoService {
         private readonly lockSerice: LockService,
     ) { }
 
-    private sleep(ms: number) {
+    private sleep (ms: number) {
         return new Promise<void>((resolve) => {
             setTimeout(resolve, ms);
         });
     }
 
-    private async waitForCache(
+    private async waitForCache (
         id: string,
         cacheKey: string,
     ) {
@@ -77,7 +77,7 @@ export class TodoService {
         return this.getTodoFromDatabase(id);
     }
 
-    private async getTodoFromDatabase(
+    private async getTodoFromDatabase (
         id: string,
     ) {
         console.log(
@@ -99,7 +99,7 @@ export class TodoService {
         return todo;
     }
 
-    async getAllTodos() {
+    async getAllTodos () {
         const cacheKey = redisKeys.allTodos();
 
         const cachedTodos = await this.cacheService.get(cacheKey);
@@ -128,7 +128,7 @@ export class TodoService {
         return todos;
     }
 
-    async getTodoById(id: string) {
+    async getTodoById (id: string) {
         const cacheKey =
             redisKeys.todo(id);
 
@@ -285,7 +285,7 @@ export class TodoService {
         // );
     }
 
-    async createTodo(data: CreateTodoInput) {
+    async createTodo (data: CreateTodoInput) {
         const todo =
             await this.todoRepository.create(data);
 
@@ -296,7 +296,7 @@ export class TodoService {
         return todo;
     }
 
-    async updateTodo(
+    async updateTodo (
         id: string,
         data: UpdateTodoInput,
     ) {
@@ -330,7 +330,7 @@ export class TodoService {
         return updateTodo;
     }
 
-    async deleteTodo(id: string) {
+    async deleteTodo (id: string) {
         const existingTodo =
             await this.todoRepository.findById(id);
 
@@ -355,11 +355,11 @@ export class TodoService {
         ]);
     }
 
-    async runSlowQuery() {
+    async runSlowQuery () {
         return this.todoRepository.slowQuery(2);
     }
 
-    async getTodoByIdWithoutCache(
+    async getTodoByIdWithoutCache (
         id: string,
     ) {
         return this.getTodoFromDatabase(id);
