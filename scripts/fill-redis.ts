@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createClient } from "redis";
 
 const redis = createClient({
@@ -21,7 +22,7 @@ const KEY_COUNT =
     Number(process.env.KEY_COUNT) ||
     10_000;
 
-async function main () {
+async function main() {
     await redis.connect();
 
     const payload =

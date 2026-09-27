@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 
 import { errorMiddleware } from "./middleware/error.middleware.js";
@@ -5,10 +6,13 @@ import { notFoundMiddleware } from "./middleware/not-found.middleware.js";
 import { todoRouter } from "./routes/todo.routes.js";
 import { requestTimingMiddleware } from "./middleware/request-timing.middleware.js";
 import { readinessCheck } from "./controllers/health.controller.js";
+import { authRouter } from "./routes/auth.routes.js";
 
 export const app = express();
 
 app.use(express.json());
+
+app.use(cookieParser());
 
 app.use(requestTimingMiddleware);
 
@@ -21,11 +25,14 @@ app.get("/health", (_req, res) => {
 
 app.get("/health/live", (_req, res) => {
     res.status(200).json({
+        success: true,
         status: "alive",
     });
 });
 
 app.get("/health/ready", readinessCheck);
+
+app.use("/api/v1/auth", authRouter);
 
 app.use("/api/v1/todos", todoRouter);
 
