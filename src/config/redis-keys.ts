@@ -24,4 +24,16 @@ export const redisKeys = {
 
     userSessions: (userId: string) =>
         `user:${userId}:sessions`,
+
+    rateLimitIp: (
+        scope: string,
+        ip: string,
+        windowId: number,
+    ) => `rate-limit:ip:${scope}:${ip}:${windowId}`,
+
+    rateLimitUser: (
+        scope: string,
+        userId: string,
+        windowId: number,
+    ) => `rate-limit:user:${scope}:${userId}:${windowId}`,
 };
