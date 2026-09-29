@@ -3,6 +3,9 @@ import { SessionService } from "../services/session.service";
 import { AuthService } from "../services/auth.service";
 import { AuthController } from "../controllers/auth.controller";
 import { AuthMiddleware } from "../middleware/auth.middleware";
+import { RateLimitService } from "../services/rate-limit.service";
+import { RateLimitMiddleware } from "../middleware/rate-limit.middleware";
+import { rateLimitConfig } from "../config/rate-limit.config";
 
 const router = Router();
 
@@ -14,7 +17,18 @@ const authController = new AuthController(authService, sessionService);
 
 const authMiddleware = new AuthMiddleware(sessionService);
 
-router.post("/login", authController.login);
+const ratelimitService = new RateLimitService();
+
+const rateLimitMiddleware = new RateLimitMiddleware(ratelimitService);
+
+const loginRateLimit = rateLimitMiddleware.create({
+    scope: "login",
+    limit: rateLimitConfig.login.limit,
+    windowSeconds: rateLimitConfig.login.windowSeconds,
+    getIdentifier: (req) => req.ip ?? "",
+})
+
+router.post("/login", loginRateLimit, authController.login);
 
 router.get("/me", authMiddleware.requireAuth, authController.me);
 
