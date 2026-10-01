@@ -8,6 +8,14 @@ export interface RateLimitMiddlewareOptions {
 
     windowSeconds: number;
 
+    algorithm?:
+    | "fixed"
+    | "sliding";
+
+    failureMode?:
+    | "open"
+    | "closed";
+
     getIdentifier: (req: Request) => string;
 }
 
@@ -21,12 +29,18 @@ export class RateLimitMiddleware {
             try {
                 const identifier = options.getIdentifier(req);
 
-                const result = await this.ratelimitService.fixedWindow({
-                    scope: options.scope,
-                    identifier,
-                    limit: options.limit,
-                    windowSeconds: options.windowSeconds,
-                });
+                const result = options.algorithm === "sliding" ?
+                    await this.ratelimitService.slidingWindow({
+                        scope: options.scope,
+                        identifier,
+                        limit: options.limit,
+                        windowSeconds: options.windowSeconds,
+                    }) : await this.ratelimitService.fixedWindow({
+                        scope: options.scope,
+                        identifier,
+                        limit: options.limit,
+                        windowSeconds: options.windowSeconds,
+                    });
 
                 res.setHeader("RateLimit-Limit", String(result.limit));
 
@@ -49,8 +63,43 @@ export class RateLimitMiddleware {
 
                 next();
             } catch (error) {
+                if (
+                  error instanceof Error &&
+                  error.message ===
+                    "RATE_LIMIT_STORE_UNAVAILABLE"
+                ) {
+                  const failureMode =
+                    options.failureMode ??
+                    "open";
+              
+                  if (
+                    failureMode ===
+                    "open"
+                  ) {
+                    console.warn(
+                      `[RATE LIMIT FAIL-OPEN] scope=${options.scope}`,
+                    );
+              
+                    return next();
+                  }
+              
+                  return res
+                    .status(503)
+                    .json({
+                      success: false,
+              
+                      error: {
+                        code:
+                          "RATE_LIMIT_STORE_UNAVAILABLE",
+              
+                        message:
+                          "Request protection service temporarily unavailable",
+                      },
+                    });
+                }
+              
                 next(error);
-            }
+              }
         };
     }
 }

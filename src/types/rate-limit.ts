@@ -19,3 +19,13 @@ export interface FixedWindowOptions {
 
     windowSeconds: number;
 }
+
+export interface SlidingWindowOptions {
+    scope: string;
+
+    identifier: string;
+
+    limit: number;
+
+    windowSeconds: number;
+}
