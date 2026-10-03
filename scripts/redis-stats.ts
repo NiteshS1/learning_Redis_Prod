@@ -1,45 +1,78 @@
-import { createClient } from "redis";
+import "dotenv/config";
+import {
+    createClient,
+} from "redis";
 
-const redis = createClient({
-    url:
-        process.env.REDIS_URL ??
-        "redis://localhost:6379",
-});
+const redis =
+    createClient({
+        url:
+            process.env.REDIS_URL ??
+            "redis://localhost:6379",
+    });
 
-async function main () {
+redis.on(
+    "error",
+    (error) => {
+        console.error(
+            "[REDIS ERROR]",
+            error,
+        );
+    },
+);
+
+async function printSection(
+    name: string,
+) {
+    console.log(
+        `\n========== ${name.toUpperCase()} ==========\n`,
+    );
+
+    console.log(
+        await redis.info(name),
+    );
+}
+
+async function main() {
     await redis.connect();
 
-    const memory =
-        await redis.info("memory");
-
-    const stats =
-        await redis.info("stats");
-
-    const keyspace =
-        await redis.info("keyspace");
-
-    console.log(
-        "\n=== MEMORY ===\n",
+    await printSection(
+        "server",
     );
 
-    console.log(memory);
-
-    console.log(
-        "\n=== STATS ===\n",
+    await printSection(
+        "clients",
     );
 
-    console.log(stats);
-
-    console.log(
-        "\n=== KEYSPACE ===\n",
+    await printSection(
+        "memory",
     );
 
-    console.log(keyspace);
+    await printSection(
+        "stats",
+    );
+
+    await printSection(
+        "persistence",
+    );
+
+    await printSection(
+        "commandstats",
+    );
+
+    await printSection(
+        "latencystats",
+    );
+
+    await printSection(
+        "keyspace",
+    );
 
     await redis.close();
 }
 
-main().catch((error) => {
-    console.error(error);
-    process.exit(1);
-});
+main().catch(
+    (error) => {
+        console.error(error);
+        process.exit(1);
+    },
+);

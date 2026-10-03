@@ -10,6 +10,7 @@ if (!redisUrl) {
 
 export const redis = createClient({
   url: redisUrl,
+  name: process.env.REDIS_CLIENT_NAME ?? "todo-api",
 });
 
 redis.on("error", (error) => {
